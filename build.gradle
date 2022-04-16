@@ -1,7 +1,9 @@
 plugins {
-	id 'org.springframework.boot' version '2.6.6'
-	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-	id 'java'
+  id 'org.springframework.boot' version '2.6.6'
+  id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+  id 'java'
+  id 'jacoco'
+  id 'checkstyle'
 }
 
 group = 'it.tccr.experiment'
@@ -9,25 +11,76 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
 repositories {
-	mavenCentral()
+  mavenCentral()
 }
 
+ext.versions = [
+  checkstyleVersion        : "8.39"
+]
+
 ext {
-	set('springCloudVersion', "2021.0.1")
+  set('springCloudVersion', "2021.0.1")
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.cloud:spring-cloud-function-web'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+  implementation 'org.springframework.boot:spring-boot-starter-web'
+  implementation 'org.springframework.cloud:spring-cloud-function-web'
+  testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-	}
+  imports {
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+  }
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+test {
+  useJUnitPlatform()
+  jacoco {
+    destinationFile = file("$buildDir/jacoco/${name}.exec")
+  }
+  testLogging {
+    events "failed"
+    exceptionFormat "full"
+    showStandardStreams = true
+  }
 }
+
+jacoco {
+  toolVersion = '0.8.7'
+}
+tasks.withType(Test) {
+  finalizedBy jacocoTestReport
+}
+
+ext {
+  jacocoMergedReport = file("$buildDir/jacoco/mergeTest.exec")
+}
+
+task jacocoMergeTestReport(type: JacocoMerge) {
+  executionData tasks.withType(Test)
+  destinationFile = jacocoMergedReport
+}
+
+jacocoTestReport {
+  dependsOn jacocoMergeTestReport
+  executionData jacocoMergedReport
+  reports {
+    xml.enabled true
+    csv.enabled false
+    html.enabled true
+    html.destination file("${buildDir}/reports/jacocoHtml")
+  }
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it)
+    }))
+  }
+}
+
+// CHECKSTYLE
+checkstyle {
+  toolVersion = "${versions.checkstyleVersion}"
+}
+checkstyleMain.source = "src/main/java"
+checkstyleTest.source = "src/test/java"

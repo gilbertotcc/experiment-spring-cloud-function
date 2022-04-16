@@ -1,1 +1,5 @@
-
+spring:
+  cloud:
+    function:
+      scan:
+        packages: it.tccr.experiment.awslambdatest.functions

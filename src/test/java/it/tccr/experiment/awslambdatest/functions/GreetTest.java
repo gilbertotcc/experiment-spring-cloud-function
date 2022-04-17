@@ -1,6 +1,6 @@
 package it.tccr.experiment.awslambdatest.functions;
 
-import it.tccr.experiment.awslambdatest.AwsLambdaTestApplication;
+import it.tccr.experiment.awslambdatest.FunctionConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +11,7 @@ import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = AwsLambdaTestApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = FunctionConfiguration.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class GreetTest {
   @Autowired
   private TestRestTemplate rest;

@@ -4,18 +4,21 @@ plugins {
   id 'java'
   id 'jacoco'
   id 'checkstyle'
+  id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
 group = 'it.tccr.experiment'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+sourceCompatibility = '11'
 
 repositories {
   mavenCentral()
 }
 
 ext.versions = [
-  checkstyleVersion        : "8.39"
+  checkstyleVersion          : "8.39",
+  awsLambdaJavaEventsVersion : "3.11.0",
+  awsLambdaJavaCoreVersion   : "1.2.1"
 ]
 
 ext {
@@ -24,12 +27,42 @@ ext {
 
 dependencies {
   implementation 'org.springframework.cloud:spring-cloud-starter-function-web'
+  implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws'
+  implementation "com.amazonaws:aws-lambda-java-events:${versions.awsLambdaJavaEventsVersion}"
+  implementation "com.amazonaws:aws-lambda-java-core:${versions.awsLambdaJavaCoreVersion}"
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 dependencyManagement {
   imports {
     mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+  }
+}
+
+assemble.dependsOn = [shadowJar]
+
+jar {
+  manifest {
+    attributes 'Main-Class': 'it.tccr.experiment.awslambdatest.FunctionConfiguration'
+  }
+}
+
+import com.github.jengelman.gradle.plugins.shadow.transformers.*
+
+shadowJar {
+  classifier = 'aws'
+  dependencies {
+    exclude(
+      dependency("org.springframework.cloud:spring-cloud-function-web"))
+  }
+  // Required for Spring
+  mergeServiceFiles()
+  append 'META-INF/spring.handlers'
+  append 'META-INF/spring.schemas'
+  append 'META-INF/spring.tooling'
+  transform(PropertiesFileTransformer) {
+    paths = ['META-INF/spring.factories']
+    mergeStrategy = "append"
   }
 }
 
@@ -48,6 +81,7 @@ test {
 jacoco {
   toolVersion = '0.8.7'
 }
+
 tasks.withType(Test) {
   finalizedBy jacocoTestReport
 }
